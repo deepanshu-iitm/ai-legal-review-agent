@@ -46,18 +46,39 @@ def main():
 
     # Build LLM Prompt
     context = "\n\n".join(top_chunks)
-    llm_prompt = f"""You are a legal assistant. Your job is to help answer questions using legal documents.
+    llm_prompt = f"""
+You are a legal assistant AI helping a user understand a legal document.
 
-If the question involves dates (like agreement signing, contract start/end, duration, deadlines, etc), DO NOT answer directly.
+You have access to external tools to assist with specific types of questions.
 
-Instead, respond with EXACTLY this format (no extra explanation):
+---
 
-use tool: extract_dates <ONLY the text that contains the date>
+TOOL USAGE RULES:
 
-Only reply with this tool command. Do NOT explain anything.
+Only use a tool if the question involves:
+- Dates (e.g., agreement signing, start/end dates, deadlines)
+- Parties (e.g., identifying the Disclosing Party, Receiving Party, or entities involved)
 
-    DOCUMENT:
-    \"\"\"
+If the question falls under one of the above, respond with:
+use tool: <tool_name> <only the relevant passage from the document>
+
+Available tools:
+- extract_dates → for extracting dates
+- extract_parties → for identifying involved parties
+
+Use tools only when needed.  
+Do not explain or summarize anything when using a tool.  
+Do not include anything outside the tool command.
+
+---
+
+For all other types of questions, respond directly and concisely using the provided document context.  
+Remain factual, clear, and professional.
+
+---
+
+DOCUMENT:
+\"\"\"
     {context}
     \"\"\"
 
@@ -71,27 +92,10 @@ Only reply with this tool command. Do NOT explain anything.
 
     print("\n--- Gemini's Answer ---\n")
     answer = ask_gemini(llm_prompt)
-    print("=== RAW GEMINI RESPONSE ===")
-    print(repr(answer))
-    print("=== END RAW RESPONSE ===")
-
-    # Tool usage detection
-    tool_pattern = r"use tool:\s*(\w+)\s*<(.+?)>"
-    match = re.search(tool_pattern, answer, re.DOTALL)
-
-    if match:
-        tool_name, tool_input = match.groups()
-        print(f"\n[INFO] Gemini requested to use tool: {tool_name}")
-        if tool_name in TOOLS:
-            tool_func = TOOLS[tool_name]
-            print(f"[INFO] Running tool `{tool_name}` on input:\n{tool_input.strip()}\n")
-            result = tool_func(tool_input.strip())
-            print(f"[TOOL RESULT]: {result}")
-        else:
-            print(f"[WARN] Tool `{tool_name}` not found in registry.")
-    else:
-        print("[INFO] No tool requested. Showing Gemini's raw answer:")
-        print(answer)
+    print(answer)
+    # print("=== RAW GEMINI RESPONSE ===")
+    # print(repr(answer))
+    # print("=== END RAW RESPONSE ===")
 
 if __name__ == "__main__":
     main()
