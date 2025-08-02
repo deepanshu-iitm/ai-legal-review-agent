@@ -1,5 +1,6 @@
 import os
 import sys
+import re
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from src.parsers.pdf_loader import extract_text_from_pdf
 from src.parsers.chunk_text import clean_text, chunk_text
@@ -7,6 +8,7 @@ from src.vector_store import init_chroma_db, create_or_load_collection, store_ch
 from src.retriever import retrieve_relevant_chunks
 from sentence_transformers import SentenceTransformer
 from src.llm.ask_gemini import ask_gemini
+from src.tools.tool_registry import TOOLS
 
 def main():
     # Step 1: Load PDF
@@ -44,8 +46,16 @@ def main():
 
     # Build LLM Prompt
     context = "\n\n".join(top_chunks)
-    llm_prompt = f"""You are an AI legal assistant.
-    Answer the following question using ONLY the context from the document below.
+    llm_prompt = f"""You are a legal assistant. Your job is to help answer questions using legal documents.
+
+If the question involves dates (like agreement signing, contract start/end, duration, deadlines, etc), DO NOT answer directly.
+
+Instead, respond with EXACTLY this format (no extra explanation):
+
+use tool: extract_dates <ONLY the text that contains the date>
+
+Only reply with this tool command. Do NOT explain anything.
+
     DOCUMENT:
     \"\"\"
     {context}
@@ -61,7 +71,27 @@ def main():
 
     print("\n--- Gemini's Answer ---\n")
     answer = ask_gemini(llm_prompt)
-    print(answer)
+    print("=== RAW GEMINI RESPONSE ===")
+    print(repr(answer))
+    print("=== END RAW RESPONSE ===")
+
+    # Tool usage detection
+    tool_pattern = r"use tool:\s*(\w+)\s*<(.+?)>"
+    match = re.search(tool_pattern, answer, re.DOTALL)
+
+    if match:
+        tool_name, tool_input = match.groups()
+        print(f"\n[INFO] Gemini requested to use tool: {tool_name}")
+        if tool_name in TOOLS:
+            tool_func = TOOLS[tool_name]
+            print(f"[INFO] Running tool `{tool_name}` on input:\n{tool_input.strip()}\n")
+            result = tool_func(tool_input.strip())
+            print(f"[TOOL RESULT]: {result}")
+        else:
+            print(f"[WARN] Tool `{tool_name}` not found in registry.")
+    else:
+        print("[INFO] No tool requested. Showing Gemini's raw answer:")
+        print(answer)
 
 if __name__ == "__main__":
     main()
