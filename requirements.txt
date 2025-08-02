@@ -1,0 +1,5 @@
+unstructured
+pypdf2
+chromadb
+sentence-transformers
+ipython
