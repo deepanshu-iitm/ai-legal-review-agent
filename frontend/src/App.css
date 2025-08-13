@@ -1,0 +1,52 @@
+/* Additional custom styles for the App component */
+
+.App {
+  text-align: center;
+}
+
+/* Loading spinner */
+.spinner {
+  @apply inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin;
+}
+
+/* Document upload area styles */
+.upload-area {
+  transition: all 0.3s ease;
+}
+
+.upload-area.drag-over {
+  @apply border-primary-500 bg-primary-50;
+}
+
+/* Query interface styles */
+.query-bubble {
+  @apply max-w-xs lg:max-w-md px-4 py-2 rounded-lg text-sm;
+}
+
+.query-bubble.user {
+  @apply bg-primary-600 text-white ml-auto;
+}
+
+.query-bubble.assistant {
+  @apply bg-legal-100 text-legal-800 mr-auto;
+}
+
+/* Document list styles */
+.document-item {
+  @apply transition-all duration-200 hover:shadow-md hover:border-primary-200;
+}
+
+.document-item.selected {
+  @apply border-primary-500 bg-primary-50;
+}
+
+/* Responsive utilities */
+@media (max-width: 640px) {
+  .container {
+    @apply px-2;
+  }
+  
+  .card {
+    @apply p-4;
+  }
+}
