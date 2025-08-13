@@ -2,7 +2,7 @@ import os
 import sys
 import re
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from src.parsers.pdf_loader import extract_text_from_pdf
+from src.parsers.document_loader import load_document
 from src.parsers.chunk_text import clean_text, chunk_text
 from src.vector_store import init_chroma_db, create_or_load_collection, store_chunks, preview_collection
 from src.retriever import retrieve_relevant_chunks
@@ -10,11 +10,12 @@ from sentence_transformers import SentenceTransformer
 from src.llm.ask_gemini import ask_gemini
 from src.tools.tool_registry import TOOLS
 
+
 def main():
     # Step 1: Load PDF
     pdf_path = "data/raw/nda_sample.pdf"
     print(f"[INFO] Loading PDF from: {pdf_path}")
-    text = extract_text_from_pdf(pdf_path)
+    text = load_document(pdf_path)
 
     # Step 2: Clean and chunk the text
     print("[INFO] Cleaning and chunking text...")
@@ -44,6 +45,7 @@ def main():
     for i, chunk in enumerate(top_chunks):
         print(f"\n[Chunk {i+1}]\n{chunk}")
 
+
     # Build LLM Prompt
     context = "\n\n".join(top_chunks)
     llm_prompt = f"""
@@ -58,6 +60,7 @@ TOOL USAGE RULES:
 Only use a tool if the question involves:
 - Dates (e.g., agreement signing, start/end dates, deadlines)
 - Parties (e.g., identifying the Disclosing Party, Receiving Party, or entities involved)
+- Summary (e.g., 'summarize the document', 'give me an overview', 'main points of this agreement')
 
 If the question falls under one of the above, respond with:
 use tool: <tool_name> <only the relevant passage from the document>
@@ -65,6 +68,7 @@ use tool: <tool_name> <only the relevant passage from the document>
 Available tools:
 - extract_dates → for extracting dates
 - extract_parties → for identifying involved parties
+- summarize_document → for summarizing the entire document
 
 Use tools only when needed.  
 Do not explain or summarize anything when using a tool.  

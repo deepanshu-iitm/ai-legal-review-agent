@@ -1,17 +1,27 @@
+import re
 from typing import List
 
 def summarize_document(chunks: List[str]) -> str:
     """
-    Returns a simple summary from the full document.
-    Uses a very basic heuristic for now — can be upgraded later.
+    Extracts a basic summary of a legal document using keyword-based heuristics.
+    Targets sections like Purpose, Confidentiality, Term, and Obligations.
     """
-    summary_parts = []
-    for chunk in chunks:
-        if "Purpose" in chunk:
-            summary_parts.append("Purpose: " + chunk.split("Purpose:")[1].split("\n")[0].strip())
-        if "Confidential" in chunk:
-            summary_parts.append("Confidential Info: " + chunk.split("Confidential")[1][:100].strip() + "...")
-        if "Term" in chunk:
-            summary_parts.append("Term: " + chunk.split("Term:")[1].split("\n")[0].strip())
+    summary = {}
+    content = "\n".join(chunks)
 
-    return "\n".join(summary_parts) if summary_parts else "No clear summary found."
+    sections = {
+        "Purpose": r"(Purpose(?: of (this )?Agreement)?)[\s:]*([\s\S]{0,500})",
+        "Confidentiality": r"(Confidential(?:ity)?(?: Information)?)\s*[:\-–]?\s*([\s\S]{0,500})",
+        "Term": r"(Term(?: and Termination)?)\s*[:\-–]?\s*([\s\S]{0,300})",
+        "Obligations": r"(Obligations(?: of (the )?(Receiving|Disclosing) Party)?)\s*[:\-–]?\s*([\s\S]{0,300})"
+    }
+
+    for section, pattern in sections.items():
+        match = re.search(pattern, content, re.IGNORECASE)
+        if match:
+            summary[section] = match.group(3 if section == "Purpose" else 2).strip().split("\n")[0][:300]
+
+    if not summary:
+        return "No clear summary sections found."
+
+    return "\n\n".join(f"{key}:\n{value}" for key, value in summary.items())
