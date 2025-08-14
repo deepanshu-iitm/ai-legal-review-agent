@@ -127,9 +127,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onDocumentSelect, selectedDocumen
             </div>
             <div className="grid gap-4">
               {documents.map((doc) => (
-                <div
+                <div 
                   key={doc.filename}
-                  className="group flex items-center justify-between p-6 bg-gradient-to-r from-white to-gray-50 rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200"
+                  className={`group flex items-center justify-between p-6 rounded-xl border transition-all duration-200 ${
+                    selectedDocument === doc.filename 
+                      ? 'border-blue-500 bg-blue-50 shadow-md' 
+                      : 'bg-gradient-to-r from-white to-gray-50 border-gray-200 hover:border-blue-300 hover:shadow-md'
+                  }`}
+                  onClick={() => onDocumentSelect(doc.filename)}
                 >
                   <div className="flex items-center space-x-4">
                     <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-md">
