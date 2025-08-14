@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // API base URL - will use proxy in development
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://your-api-domain.com' 
+  ? 'https://ai-legal-review-agent.onrender.com' 
   : 'http://localhost:8000';
 
 const api = axios.create({
