@@ -154,6 +154,34 @@ def list_documents():
         logger.error(f"Error listing documents: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error listing documents: {str(e)}")
 
+@app.get("/documents/{filename}/content")
+def get_document_content(filename: str):
+    """Get the raw content of an uploaded document"""
+    try:
+        file_path = os.path.join(UPLOAD_DIR, filename)
+        
+        if not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail="File not found.")
+        
+        # Import document loaders
+        from src.parsers.document_loader import load_document
+        
+        # Extract text content from the document
+        content = load_document(file_path)
+        logger.info(f"Document content retrieved: {filename}")
+        
+        return {
+            "filename": filename,
+            "content": content,
+            "content_length": len(content) if content else 0
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving document content: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving document content: {str(e)}")
+
 @app.delete("/documents/{filename}")
 def delete_document(filename: str):
     """Delete an uploaded document"""

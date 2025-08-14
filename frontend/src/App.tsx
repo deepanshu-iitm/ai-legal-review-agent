@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
-import Header from './components/Header';
 import Dashboard from './components/Dashboard';
 import DocumentUpload from './components/DocumentUpload';
 import DocumentViewer from './components/DocumentViewer';
@@ -24,8 +23,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
-        <div className="min-h-screen bg-legal-50">
-          <Header />
+        <div className="min-h-screen">
           
           <main className="container mx-auto px-4 py-8">
             <Routes>

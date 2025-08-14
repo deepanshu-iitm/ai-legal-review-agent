@@ -1,29 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
 @layer base {
-  html {
-    font-family: 'Inter', system-ui, sans-serif;
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: #ffffff;
+    @apply bg-gradient-to-br from-slate-50 to-blue-50;
+  }
+  html, body, #root {
+    height: 100%;
+    min-height: 100%;
+    margin: 0;
+    padding: 0;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+    @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
   }
   
   .btn-secondary {
-    @apply bg-legal-100 hover:bg-legal-200 text-legal-700 font-medium py-2 px-4 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-legal-500 focus:ring-offset-2;
+    @apply bg-white hover:bg-gray-50 text-gray-700 font-medium py-2.5 px-4 rounded-lg border border-gray-300 hover:border-gray-400 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2;
   }
   
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-legal-200 p-6;
+    @apply bg-white rounded-lg border border-gray-200 p-6 shadow-sm;
   }
   
   .input-field {
-    @apply block w-full rounded-lg border-legal-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm;
+    @apply block w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors duration-200;
+  }
+  
+  .spinner {
+    @apply animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-blue-600;
   }
 }

@@ -57,8 +57,13 @@ export const uploadDocument = async (file: File): Promise<UploadResponse> => {
   return response.data;
 };
 
-export const queryDocument = async (request: QueryRequest): Promise<QueryResponse> => {
-  const response = await api.post('/ask/', request);
+export const queryDocument = async (filename: string, question: string): Promise<QueryResponse & { processing_time: number }> => {
+  const response = await api.post('/ask/', { filename, question });
+  return response.data;
+};
+
+export const fetchDocumentContent = async (filename: string) => {
+  const response = await api.get(`/documents/${filename}/content`);
   return response.data;
 };
 
