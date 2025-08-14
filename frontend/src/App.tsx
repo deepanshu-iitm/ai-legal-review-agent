@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import Dashboard from './components/Dashboard';
 import DocumentUpload from './components/DocumentUpload';
-import DocumentViewer from './components/DocumentViewer';
 import QueryInterface from './components/QueryInterface';
 import './App.css';
 
@@ -39,14 +38,6 @@ function App() {
               <Route 
                 path="/upload" 
                 element={<DocumentUpload />} 
-              />
-              <Route 
-                path="/document/:filename" 
-                element={
-                  <DocumentViewer 
-                    selectedDocument={selectedDocument}
-                  />
-                } 
               />
               <Route 
                 path="/query" 
