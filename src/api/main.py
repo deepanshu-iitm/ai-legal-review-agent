@@ -13,7 +13,11 @@ from src.api.models import QueryRequest, QueryResponse, UploadResponse, Document
 from src.core.document_processor import process_document_query
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+log_level = os.environ.get("LOG_LEVEL", "INFO")
+logging.basicConfig(
+    level=getattr(logging, log_level),
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
@@ -30,8 +34,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-UPLOAD_DIR = "data/raw"
+# Use environment variable for upload directory in production
+UPLOAD_DIR = os.environ.get("UPLOAD_DIR", "data/raw")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# Global variables for caching
+_embedder_cache = None
+_db_client_cache = None
 
 @app.get("/")
 def read_root():
@@ -46,15 +55,49 @@ def read_root():
 @app.get("/health")
 def health_check():
     """Detailed health check endpoint"""
-    return {
+    health_status = {
         "status": "healthy",
         "services": {
             "api": "running",
-            "vector_db": "connected",
-            "llm": "available"
+            "vector_db": "unknown",
+            "llm": "unknown",
+            "embedder": "unknown"
         },
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
+        "environment": os.environ.get("ENVIRONMENT", "development")
     }
+    
+    # Check embedder status
+    try:
+        if _embedder_cache is not None:
+            health_status["services"]["embedder"] = "loaded"
+        else:
+            from src.core.document_processor import get_embedder
+            get_embedder()
+            health_status["services"]["embedder"] = "available"
+    except Exception:
+        health_status["services"]["embedder"] = "error"
+        health_status["status"] = "degraded"
+    
+    # Check vector DB status
+    try:
+        if _db_client_cache is not None:
+            health_status["services"]["vector_db"] = "connected"
+        else:
+            health_status["services"]["vector_db"] = "available"
+    except Exception:
+        health_status["services"]["vector_db"] = "error"
+        health_status["status"] = "degraded"
+    
+    # Check LLM status (basic check)
+    try:
+        import google.generativeai as genai
+        health_status["services"]["llm"] = "available"
+    except Exception:
+        health_status["services"]["llm"] = "error"
+        health_status["status"] = "degraded"
+    
+    return health_status
 
 @app.post("/upload/", response_model=UploadResponse)
 async def upload_document(file: UploadFile = File(...)):
@@ -225,7 +268,32 @@ async def general_exception_handler(request, exc):
         ).dict()
     )
 
+# Startup event to pre-initialize resources
+@app.on_event("startup")
+async def startup_event():
+    """Pre-initialize resources to reduce cold start time"""
+    global _embedder_cache, _db_client_cache
+    try:
+        logger.info("Initializing application resources...")
+        
+        # Pre-initialize embedder
+        from src.core.document_processor import get_embedder
+        _embedder_cache = get_embedder()
+        logger.info("Embedder initialized successfully")
+        
+        # Pre-initialize vector DB
+        from src.vector_store import init_chroma_db
+        persist_dir = os.environ.get("VECTOR_DB_PERSIST_DIR", "vector_db")
+        _db_client_cache = init_chroma_db(persist_directory=persist_dir)
+        logger.info("Vector database initialized successfully")
+        
+    except Exception as e:
+        logger.error(f"Error during startup initialization: {str(e)}")
+        # Don't fail startup, just log the error
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port, reload=True)
+    environment = os.environ.get("ENVIRONMENT", "development")
+    reload = environment == "development"
+    uvicorn.run(app, host="0.0.0.0", port=port, reload=reload)
