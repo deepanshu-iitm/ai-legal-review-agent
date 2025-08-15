@@ -30,8 +30,13 @@ def get_embedder():
     """Get or create the global embedder instance"""
     global _embedder
     if _embedder is None:
-        logger.info("Initializing SentenceTransformer embedder...")
-        _embedder = SentenceTransformer("all-MiniLM-L6-v2")
+        try:
+            logger.info("Initializing SentenceTransformer embedder...")
+            _embedder = SentenceTransformer("all-MiniLM-L6-v2")
+            logger.info("SentenceTransformer embedder initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize embedder: {str(e)}")
+            raise
     return _embedder
 
 def process_document_query(file_path: str, question: str) -> str:
@@ -70,7 +75,8 @@ def process_document_query(file_path: str, question: str) -> str:
         
         # Step 3: Initialize vector database
         logger.info("Step 3: Initializing vector database...")
-        db_client = init_chroma_db(persist_directory="vector_db")
+        persist_dir = os.environ.get("VECTOR_DB_PERSIST_DIR", "vector_db")
+        db_client = init_chroma_db(persist_directory=persist_dir)
         
         # Create collection name based on file
         filename = os.path.basename(file_path)
@@ -79,15 +85,21 @@ def process_document_query(file_path: str, question: str) -> str:
         
         # Step 4: Store chunks in vector database (if not already stored)
         logger.info("Step 4: Storing chunks in vector database...")
-        embedder = get_embedder()
-        
-        # Check if collection is empty (new document)
-        existing_count = collection.count()
-        if existing_count == 0:
-            logger.info(f"New document - storing {len(chunks)} chunks...")
+        try:
+            embedder = get_embedder()
+            
+            # Check if collection is empty (new document)
+            existing_count = collection.count()
+            if existing_count == 0:
+                logger.info(f"New document - storing {len(chunks)} chunks...")
+                store_chunks(chunks, collection, embedder=embedder)
+            else:
+                logger.info(f"Document already processed - using existing {existing_count} chunks")
+        except Exception as e:
+            logger.error(f"Error in vector database operations: {str(e)}")
+            # Try to continue with a simplified approach
+            embedder = get_embedder()
             store_chunks(chunks, collection, embedder=embedder)
-        else:
-            logger.info(f"Document already processed - using existing {existing_count} chunks")
         
         # Step 5: Retrieve relevant chunks for the question
         logger.info("Step 5: Retrieving relevant chunks...")
@@ -176,7 +188,8 @@ def process_document_only(file_path: str) -> dict:
         chunks = chunk_text(cleaned_text, max_chunk_size=500)
         
         # Initialize vector database
-        db_client = init_chroma_db(persist_directory="vector_db")
+        persist_dir = os.environ.get("VECTOR_DB_PERSIST_DIR", "vector_db")
+        db_client = init_chroma_db(persist_directory=persist_dir)
         filename = os.path.basename(file_path)
         collection_name = f"doc_{hash(filename) % 1000000}"
         collection = create_or_load_collection(db_client, collection_name=collection_name)
