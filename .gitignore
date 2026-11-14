@@ -22,5 +22,10 @@ build/
 # OS files
 .DS_Store
 Thumbs.db
-config.bat
 node_modules
+
+.env
+.env.*
+!.env.example
+.vscode/
+node_modules/
